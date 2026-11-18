@@ -259,20 +259,20 @@ hist(house$price, breaks = 60, col = "#4C9F9F", border = "white",
      main = "Price Distribution (Raw)", xlab = "Price (Lakhs)")
 hist(house$log_price, breaks = 40, col = "#E07A5F", border = "white",
      main = "Price Distribution (Log)", xlab = "log(Price)")
-dev.off()
+invisible(dev.off())
 
 png("plots/02_boxplot_pps_bhk.png", width = 900, height = 600)
 boxplot(price_per_sqft ~ bhk, data = house[house$bhk <= 6, ],
         col = "#81B29A", main = "Price per Sqft by BHK",
         xlab = "BHK", ylab = "Price per Sqft (INR)")
-dev.off()
+invisible(dev.off())
 
 png("plots/03_scatter_sqft_price.png", width = 900, height = 600)
 plot(house$total_sqft, house$price, pch = 20, col = rgb(0.3, 0.6, 0.6, 0.3),
      main = "Total Sqft vs Price", xlab = "Total Sqft", ylab = "Price (Lakhs)",
      xlim = c(0, 6000), ylim = c(0, 600))
 abline(lm(price ~ total_sqft, data = house), col = "#E07A5F", lwd = 2)
-dev.off()
+invisible(dev.off())
 
 cat("\nBase R plots saved to plots/ (01-03)\n")
 
@@ -288,7 +288,7 @@ pal <- c("#3D5A80", "#98C1D9", "#EE6C4D", "#81B29A")
 g1 <- ggplot(house[house$total_sqft <= 5000 & house$price <= 500, ],
              aes(total_sqft, price, colour = availability)) +
   geom_point(alpha = 0.3, size = 1.2) +
-  geom_smooth(method = "lm", se = FALSE, linewidth = 1.1) +
+  geom_smooth(method = "lm", formula = y ~ x, se = FALSE, linewidth = 1.1) +
   scale_colour_manual(values = pal[c(1, 3)]) +
   labs(title = "Total Sqft vs Price", subtitle = "Linear trend by availability",
        x = "Total Sqft", y = "Price (Lakhs)", colour = "Availability")
@@ -382,4 +382,96 @@ cat("Exported rows:", nrow(clean_out), "| Re-read rows:", nrow(check),
     "| Match:", identical(nrow(clean_out), nrow(check)), "\n")
 cat("Files in output/:\n"); print(list.files("output"))
 cat("Plots generated:", length(list.files("plots", pattern = "\\.png$")), "\n")
+
+# ---- Section 7: Lab Coverage Extras (Labs 2, 3, 4, 5, 6, I/O) ----
+cat("\n================ SECTION 7: LAB COVERAGE EXTRAS ================\n")
+suppressPackageStartupMessages({
+  library(readxl)
+  library(visdat)
+})
+
+# 7.1 Visualise missingness in the RAW data (Lab 4 - vis_miss)
+house_raw <- read.csv("data/Bengaluru_House_Data.csv", na.strings = c("", "NA"))
+g_miss <- vis_miss(house_raw) +
+  labs(title = "Missing Values in Raw Dataset")
+ggsave("plots/12_vis_miss_raw.png", g_miss, width = 9, height = 6, dpi = 150)
+cat("Raw missing cells:", sum(is.na(house_raw)),
+    "| % of all cells:", round(mean(is.na(house_raw)) * 100, 2), "\n")
+
+# 7.2 rep(): reshape the BHK x availability matrix into long format (Lab 2)
+price_long <- data.frame(
+  bhk          = rep(rownames(price_matrix), times = ncol(price_matrix)),
+  availability = rep(colnames(price_matrix), each = nrow(price_matrix)),
+  avg_price    = as.vector(price_matrix)
+)
+cat("\nMatrix reshaped with rep():\n"); print(price_long)
+
+# 7.3 while loop: smallest area that covers 90% of listings (Lab 3)
+sqft_limit <- 500
+while (mean(house$total_sqft <= sqft_limit) < 0.90) {
+  sqft_limit <- sqft_limit + 100
+}
+cat("\n90% of listings are at or below", sqft_limit, "sqft\n")
+
+# 7.4 repeat loop: budget needed to afford 75% of listings (Lab 3)
+budget <- 10
+repeat {
+  share <- mean(house$price <= budget)
+  if (share >= 0.75) break
+  budget <- budget + 10
+}
+cat("A budget of Rs", budget, "lakh covers", round(share * 100, 1), "% of listings\n")
+
+# 7.5 aggregate() grouped statistics (Lab 5)
+cat("\nMedian price/sqft by BHK (aggregate):\n")
+print(aggregate(price_per_sqft ~ bhk, data = house[house$bhk <= 5, ], FUN = median))
+cat("\nMean price (lakhs) by area type x availability (aggregate):\n")
+agg2 <- aggregate(price ~ area_short + availability, data = house, FUN = mean)
+agg2$price <- round(agg2$price, 2)
+print(agg2)
+
+# 7.6 pairs() scatterplot matrix (Lab 5)
+set.seed(42)
+pair_sample <- house[sample(nrow(house), 2000), c("price", "total_sqft", "bhk", "bath", "price_per_sqft")]
+png("plots/13_pairs_matrix.png", width = 1000, height = 1000)
+pairs(pair_sample, pch = 20, col = rgb(0.24, 0.35, 0.5, 0.3),
+      main = "Scatterplot Matrix (random sample of 2,000 listings)")
+invisible(dev.off())
+
+# 7.7 Histogram + density curve (Lab 6)
+g9 <- ggplot(house, aes(log_price)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 40, fill = pal[2], colour = "white") +
+  geom_density(colour = pal[3], linewidth = 1.1) +
+  labs(title = "Log Price: Histogram with Density Curve", x = "log(Price)", y = "Density")
+ggsave("plots/14_gg_hist_density.png", g9, width = 8, height = 5.5, dpi = 150)
+
+# 7.8 Violin plot (Lab 6)
+g10 <- ggplot(house, aes(availability, price_per_sqft, fill = availability)) +
+  geom_violin(alpha = 0.8, show.legend = FALSE) +
+  geom_boxplot(width = 0.12, fill = "white", outlier.shape = NA) +
+  scale_fill_manual(values = pal[c(1, 3)]) +
+  labs(title = "Price per Sqft Distribution by Availability",
+       x = NULL, y = "Price per Sqft (INR)")
+ggsave("plots/15_gg_violin_avail.png", g10, width = 8, height = 5.5, dpi = 150)
+
+# 7.9 facet_wrap (Lab 6)
+g11 <- ggplot(house[house$total_sqft <= 5000 & house$price <= 500, ],
+              aes(total_sqft, price)) +
+  geom_point(alpha = 0.25, size = 0.9, colour = pal[1]) +
+  geom_smooth(method = "lm", formula = y ~ x, se = FALSE, colour = pal[3]) +
+  facet_wrap(~ area_short) +
+  labs(title = "Total Sqft vs Price, Faceted by Area Type",
+       x = "Total Sqft", y = "Price (Lakhs)")
+ggsave("plots/16_gg_facet_area.png", g11, width = 10, height = 7, dpi = 150)
+
+# 7.10 read_excel(): read back the exported workbook (I/O lab)
+xlsx_path <- "output/analysis_results.xlsx"
+cat("\nSheets in exported workbook:", paste(excel_sheets(xlsx_path), collapse = ", "), "\n")
+xl_clean <- read_excel(xlsx_path, sheet = "clean_data")
+xl_desc  <- read_excel(xlsx_path, sheet = "descriptive")
+cat("clean_data sheet rows:", nrow(xl_clean), "| Match with data frame:",
+    nrow(xl_clean) == nrow(clean_out), "\n")
+cat("descriptive sheet:\n"); print(xl_desc)
+
+cat("\nTotal plots generated:", length(list.files("plots", pattern = "\\.png$")), "\n")
 cat("\n=========== PIPELINE COMPLETE ===========\n")

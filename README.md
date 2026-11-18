@@ -14,12 +14,12 @@ Download `Bengaluru_House_Data.csv` into `data/` (not committed).
 | Lab | Concept | Applied In |
 |---|---|---|
 | 1 | R basics, operators | Setup, arithmetic on price/sqft |
-| 2 | Vectors, `seq`/`rep`, matrices | Sqft bins via `seq()`, BHK × availability price matrix, correlation matrix |
-| 3 | `if-else` ladder, `switch`, loops | Unit conversion parser, price segmentation, per-location IQR loop |
-| — | Data frames, lists, factors, I/O | CSV import, factor conversion, summary list, CSV/TXT/XLSX export |
-| 4 | Missing values, imputation, scaling, log | Median imputation, z-score, min-max, log transform |
-| 5 | EDA: descriptive stats, hist, boxplot, scatter | Stats table, base R plots 01–03 |
-| 6 | ggplot2 | Plots 04–11 (scatter + lm, stacked/grouped bars, line, boxplot, heatmap) |
+| 2 | Vectors, `seq`/`rep`, matrices | Sqft bins via `seq()`, matrix reshaped with `rep()`, BHK × availability price matrix, correlation matrix |
+| 3 | `if-else` ladder, `switch`, `for`/`while`/`repeat` loops | Unit parser, price segments, per-location IQR loop, 90% area threshold (`while`), 75% budget threshold (`repeat`) |
+| — | Data frames, lists, factors, I/O | CSV import, factors, summary list, CSV/TXT/XLSX export, `read_excel()` read-back |
+| 4 | Missing values, imputation, scaling, log | `vis_miss()`, median imputation, z-score, min-max, log transform |
+| 5 | EDA: descriptive stats, `aggregate()`, `pairs()`, hist, boxplot, scatter | Stats table, grouped stats, scatterplot matrix, base R plots |
+| 6 | ggplot2 | Scatter + lm, stacked/grouped bars, line, boxplot, violin, histogram + density, `facet_wrap`, heatmap |
 
 ## Pipeline
 `Load → Clean (blank→NA, unit parsing, imputation) → Outlier removal (domain rules + per-location IQR) → Transform → EDA → Visualise → Export`
@@ -44,6 +44,6 @@ Rscript project.R
 ```
 ├── project.R          # full pipeline
 ├── data/              # raw dataset (gitignored)
-├── plots/             # 11 generated figures
+├── plots/             # 16 generated figures
 └── output/            # clean CSV, stats TXT, multi-sheet XLSX
 ```
